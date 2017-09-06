@@ -3,10 +3,9 @@ library("readr")
 library("dplyr")
 
 # Open files
-base_dir <- '/home/alexandre/Documents/PolyMTL/LOG6803 - Systèmes de recommandation/'
-data <- read.csv(paste(base_dir, "u.data", sep=""), sep='|')
-items <- read.csv(paste(base_dir, "u.item.csv", sep=""), sep='|')
-users <- read.csv(paste(base_dir, "u.user.csv", sep=""), sep='|')
+data <- read.csv("u.data", sep='|')
+items <- read.csv("u.item.csv", sep='|')
+users <- read.csv("u.user.csv", sep='|')
 
 # Question 1
 users_jobs <- users %>% select(id, job) %>% group_by(job)
@@ -25,3 +24,4 @@ ratings_by_age <- users_avg_ratings %>% group_by(age) %>% summarize(avg_rating =
 ratings_by_age
 
 # Question 2
+# ratings <- data %>% sparseMatrix(i = )
