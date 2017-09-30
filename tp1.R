@@ -25,19 +25,66 @@ users <- read.csv("u.user.csv", sep='|')
 # ratings_by_age
 
 # ----------------------------- Question 2 -------------------------------------
+# ratings <- sparseMatrix(i = data[,1], j = data[,2], x = data[,3])
+#
+# ## Cosinus entre un vecteur v et chaque colonne dela matrice m
+# cosinus.vm <- function(v,m) { n <- sqrt(colSums(m^2)); (v %*% m)/(n * sqrt(sum(v^2))) }
+#
+# # Trouve les indexes des premières 'n' valeurs maximales d'une matrice
+# max.nindex <- function(m, n=10) {
+#     i <- order(m, decreasing=TRUE)
+#     return(i[1:n])
+# }
+#
+# ratings_cos <- cosinus.vm(ratings[,450], ratings)
+#
+# closest_movies <- max.nindex(ratings_cos)
+#
+# closest_movies
+
+# ----------------------------- Question 3 -------------------------------------
 ratings <- sparseMatrix(i = data[,1], j = data[,2], x = data[,3])
+rownames(ratings) <- paste('u', 1:nrow(ratings), sep='')
+colnames(ratings) <- paste('i', 1:ncol(ratings), sep='')
+m <- as.matrix(ratings)
+m[m==0] <- NA
 
-## Cosinus entre un vecteur v et chaque colonne dela matrice m
-cosinus.vm <- function(v,m) { n <- sqrt(colSums(m^2)); (v %*% m)/(n * sqrt(sum(v^2))) }
+users.no.vote.450 = which(m[,450] %in% NA)
+# users.no.vote.450
 
-# Trouve les indexes des premières 'n' valeurs maximales d'une matrice
-max.nindex <- function(m, n=5) {
-    i <- order(m, decreasing=TRUE)
+distance.450 <- sqrt(colSums((m[,450] - m)^2, na.rm=T))
+
+min.nindex <- function(m, n=5) {
+    i <- order(m)
     return(i[1:n])
 }
 
-ratings_cos <- cosinus.vm(ratings[,450], ratings)
+# Calcul des 20 voisins les plus proches
+n.voisins <- 20 + 1
+votes.communs <- (colSums((m[,450] * m) > 0, na.rm=T)) # nombre de votes communs
+i.distance.450 <- min.nindex(distance.450, n.voisins)
 
-closest_movies <- max.nindex(ratings_cos)
+# votes.communs[i.distance.450]
 
-closest_movies
+i.distance.450 <- i.distance.450[i.distance.450 != 450]
+
+# mean
+i.mean.item <- matrix(colMeans(m[], na.rm=TRUE))
+# i.mean.item
+
+## Cosinus entre un vecteur v et chaque colonne dela matrice m
+cosinus.vm <- function(v,m) { n <- sqrt(colSums(m^2, na.rm=TRUE)); (v %*% m)/(n * sqrt(sum(v^2))) }
+
+similarite <- cosinus.vm(ratings[,450], ratings[])
+
+no.vote.users.closest <- m[users.no.vote.450, i.distance.450]
+dim.no.vote <- dim(no.vote.users.closest)
+closest.means <- t(matrix(rep(i.mean.item[i.distance.450], dim.no.vote[1]), ncol=dim.no.vote[1]))
+
+sim.closest <- t(matrix(rep(similarite[i.distance.450], dim.no.vote[1]), ncol=dim.no.vote[1]))
+
+num <- matrix(rowSums(sim.closest * (no.vote.users.closest - closest.means), na.rm=TRUE))
+denom <- matrix(sum(abs(similarite[i.distance.450])), nrow=dim.no.vote[1], ncol=1)
+
+res = matrix(i.mean.item[450], nrow=dim.no.vote[1], ncol=1) + num / denom
+res
