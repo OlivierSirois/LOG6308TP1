@@ -43,6 +43,55 @@ users <- read.csv("u.user.csv", sep='|')
 # closest_movies
 
 # ----------------------------- Question 3 -------------------------------------
+
+predict <- function(ratings) {
+    ratings <- sparseMatrix(i = data[,1], j = data[,2], x = data[,3])
+    rownames(ratings) <- paste('u', 1:nrow(ratings), sep='')
+    colnames(ratings) <- paste('i', 1:ncol(ratings), sep='')
+    m <- as.matrix(ratings)
+    m[m==0] <- NA
+
+    users.no.vote.450 = which(m[,450] %in% NA)
+    # users.no.vote.450
+
+    distance.450 <- sqrt(colSums(ratings[,450] - ratings)^2)
+
+    min.nindex <- function(m, n=5) {
+        i <- order(m)
+        return(i[1:n])
+    }
+
+    # Calcul des 20 voisins les plus proches
+    n.voisins <- 20 + 1
+    votes.communs <- colSums((ratings[,450] * ratings) > 0) # nombre de votes communs
+    #print(votes.communs)
+    i.distance.450 <- min.nindex(distance.450, n.voisins)
+    # print(votes.communs[i.distance.450])
+    # votes.communs[i.distance.450]
+    i.distance.450 <- i.distance.450[i.distance.450 != 450]
+    # mean
+    i.mean.item <- matrix(colMeans(m[], na.rm=TRUE))
+    # i.mean.item
+
+    ## Cosinus entre un vecteur v et chaque colonne dela matrice m
+    cosinus.vm <- function(v,m) { n <- sqrt(colSums(m^2, na.rm=TRUE)); (v %*% m)/(n * sqrt(sum(v^2))) }
+
+    similarite <- cosinus.vm(ratings[,450], ratings[])
+
+    no.vote.users.closest <- m[users.no.vote.450, i.distance.450]
+    #print(no.vote.users.closest)
+    dim.no.vote <- dim(no.vote.users.closest)
+    closest.means <- t(matrix(rep(i.mean.item[i.distance.450], dim.no.vote[1]), ncol=dim.no.vote[1]))
+
+    sim.closest <- t(matrix(rep(similarite[i.distance.450], dim.no.vote[1]), ncol=dim.no.vote[1]))
+    # print(sim.closest)
+    num <- matrix(rowSums(sim.closest * (no.vote.users.closest - closest.means), na.rm=TRUE))
+    denom <- matrix(sum(abs(similarite[i.distance.450])), nrow=dim.no.vote[1], ncol=1)
+
+    res <- matrix(i.mean.item[450], nrow=dim.no.vote[1], ncol=1) + num / denom
+    res
+}
+
 ratings <- sparseMatrix(i = data[,1], j = data[,2], x = data[,3])
 rownames(ratings) <- paste('u', 1:nrow(ratings), sep='')
 colnames(ratings) <- paste('i', 1:ncol(ratings), sep='')
@@ -59,32 +108,19 @@ min.nindex <- function(m, n=5) {
     return(i[1:n])
 }
 
-# Calcul des 20 voisins les plus proches
-n.voisins <- 20 + 1
-votes.communs <- colSums((ratings[,450] * ratings) > 0) # nombre de votes communs
-#print(votes.communs)
-i.distance.450 <- min.nindex(distance.450, n.voisins)
-print(votes.communs[i.distance.450])
-# votes.communs[i.distance.450]
-i.distance.450 <- i.distance.450[i.distance.450 != 450]
-# mean
-i.mean.item <- matrix(colMeans(m[], na.rm=TRUE))
-# i.mean.item
+# ----------------------------- Question 4 -------------------------------------
 
-## Cosinus entre un vecteur v et chaque colonne dela matrice m
-cosinus.vm <- function(v,m) { n <- sqrt(colSums(m^2, na.rm=TRUE)); (v %*% m)/(n * sqrt(sum(v^2))) }
+users.vote.450 = which(! m[,450] %in% NA)
 
-similarite <- cosinus.vm(ratings[,450], ratings[])
 
-no.vote.users.closest <- m[users.no.vote.450, i.distance.450]
-#print(no.vote.users.closest)
-dim.no.vote <- dim(no.vote.users.closest)
-closest.means <- t(matrix(rep(i.mean.item[i.distance.450], dim.no.vote[1]), ncol=dim.no.vote[1]))
+compute.square.difference <- function(u.id, ratings) {
+    ratings.user.removed = as.matrix(ratings);
+    ratings.user.removed[u.id, 450] = NA;
 
-sim.closest <- t(matrix(rep(similarite[i.distance.450], dim.no.vote[1]), ncol=dim.no.vote[1]))
-print(sim.closest)
-num <- matrix(rowSums(sim.closest * (no.vote.users.closest - closest.means), na.rm=TRUE))
-denom <- matrix(sum(abs(similarite[i.distance.450])), nrow=dim.no.vote[1], ncol=1)
+    res <- predict(ratings.user.removed)
 
-res <- matrix(i.mean.item[450], nrow=dim.no.vote[1], ncol=1) + num / denom
-#print(res)
+    (res[u.id] - ratings[u.id, 450]) ** 2
+}
+
+res <- compute.square.difference(users.vote.450, ratings)
+sqrt(sum(res, na.rm=T) / dim(matrix(users.vote.450))[1])
