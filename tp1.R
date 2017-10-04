@@ -9,6 +9,9 @@ items <- read.csv("u.item.csv", sep='|')
 users <- read.csv("u.user.csv", sep='|')
 
 # ----------------------------- Question 1 -------------------------------------
+
+print("------------------- Question 1 -------------------")
+
 users_jobs <- users %>% select(id, job) %>% group_by(job)
 ratings <- data %>% select(user.id, rating)
 
@@ -33,6 +36,9 @@ ratings_by_age <- users_avg_ratings %>% group_by(age) %>% summarize(avg_rating =
 print(ratings_by_age)
 
 # ----------------------------- Question 2 -------------------------------------
+
+print("------------------- Question 2 -------------------")
+
 ratings <- sparseMatrix(i = data[,1], j = data[,2], x = data[,3])
 
 ## Cosinus entre un vecteur v et chaque colonne dela matrice m
@@ -56,6 +62,8 @@ print(closest_movies)
 
 # ----------------------------- Question 3 -------------------------------------
 
+print("------------------- Question 3 -------------------")
+
 # Trouve les indexes des premières 'n' valeurs minimales d'une matrice
 min.nindex <- function(m, n=5) {
     i <- order(m)
@@ -73,7 +81,7 @@ predict <- function(ratings) {
 
     # Vecteur contenant les indices des utilisateurs n'ayant pas indiqué de vote
     # pour Star Trek
-    users.no.vote.450 = which(m[,450] %in% NA)
+    users.no.vote.450 <- which(m[,450] %in% NA)
 
     # Vecteur contenant les distances entre Star Trek et les autres films
     distance.450 <- sqrt(colSums(ratings[,450] - ratings)^2)
@@ -122,16 +130,22 @@ print(predict(ratings))
 
 # Principe : on retire temporairement de la matrice de votes, un utilisateur
 # ayant voté pour Star Trek, on prédit ensuite son vote, et on se sert de la
-# comparaison entre ces deux valeurs pour calcul la RMSE globale.
+# comparaison entre ces deux valeurs pour calculer la RMSE globale.
 
+print("------------------- Question 4 -------------------")
+
+# Cette fonction calcule le carré de la différence entre le vote prédit pour un
+# utilisateur, et le vote réel
 compute.square.difference <- function(u.id, ratings) {
-    ratings.user.removed = as.matrix(ratings);
-    ratings.user.removed[u.id, 450] = NA;
+    # On retire le vote de l'utilisateur étudié
+    ratings.user.removed <- as.matrix(ratings)
+    ratings.user.removed[u.id, 450] <- 0
 
+    # On prédit (entre autres) le vote de cet utilisateur
     predictions <- predict(ratings.user.removed)
 
-    print(predictions)
-
+    # On calcule le carré de la différence entre la valeur prédite et la valeurs
+    # réelle
     res <- (predictions[u.id] - ratings[u.id, 450]) ** 2
 
     return (res)
@@ -143,11 +157,15 @@ colnames(ratings) <- paste('i', 1:ncol(ratings), sep='')
 m <- as.matrix(ratings)
 m[m==0] <- NA
 
-users.vote.450 = which(! m[,450] %in% NA)
+# On sélectionne tous les utilisateurs ayant donnée un vote à Star Trek
+users.vote.450 <- which(! m[,450] %in% NA)
 
-# print(users.vote.450)
+# Pour chacun de ces utilisateurs, on calcule le caré de la différence entre son
+# vote prédit et son vote réel. On somme tous ces résultats
+res <- sum(sapply(users.vote.450, function(x) compute.square.difference(x, ratings)), na.rm=T)
 
-res <- compute.square.difference(users.vote.450, ratings)
-res <- sqrt(sum(res, na.rm=T) / dim(matrix(users.vote.450))[1])
+# On divise le résultat par le nombre de votants pour Star Trek, puis on prend la
+# racine carrée de ce résultat, ce qui nous donne la RMSE
+res <- sqrt(res / dim(matrix(users.vote.450))[1])
 
-# print(res)
+print(res)
